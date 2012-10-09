@@ -31,7 +31,6 @@ package ornl.elision.core
 
 import scala.actors.Actor
 import scala.actors.Actor._
-import ornl.elision.repl.ReplActor
 
 /**
  * A simple console that uses `print` to write to the standard output.
@@ -72,14 +71,9 @@ trait Console {
    */
   def defaultPause(): Boolean = {
     write("--More--")
-    if(ReplActor.guiMode) {
-        ReplActor.waitOnGUI()
-        true
-    } else {
-        val ch = scala.io.Source.stdin.reader.read.toChar
-        if (ch != '\n') write(_ENDL)
-        ch != 'q'
-    }
+    val ch = scala.io.Source.stdin.reader.read.toChar
+    if (ch != '\n') write(_ENDL)
+    ch != 'q'
   }
   
   /** The pause closure to use. */

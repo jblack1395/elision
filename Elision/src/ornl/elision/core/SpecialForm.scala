@@ -38,8 +38,6 @@
 package ornl.elision.core
 import ornl.elision.ElisionException
 
-import ornl.elision.repl.ReplActor
-
 /**
  * Construction of a special form failed for the specified reason.
  * 
@@ -273,35 +271,15 @@ extends BasicAtom {
     case _ => Fail("Special forms match only special forms.", this, subject)
   }
 	
-  // **** GUI changes
   def rewrite(binds: Bindings) = {
-    ReplActor ! ("Eva","pushTable","SpecialForm rewrite")
-    // top node of this subtree
-    ReplActor ! ("Eva", "addToSubroot", ("rwNode", "SpecialForm rewrite: ")) // val rwNode = RWTree.addToCurrent("SpecialForm rewrite: ")
-    ReplActor ! ("Eva", "addTo", ("rwNode", "tag", "Tag: ", tag)) // val tagNode = RWTree.addTo(rwNode, "Tag: ", tag)
-    ReplActor ! ("Eva", "addTo", ("rwNode", "content", "Content: ", content)) // val contentNode = RWTree.addTo(rwNode, "Content: ", content)
-    
-    ReplActor ! ("Eva", "setSubroot", "tag") //RWTree.current = tagNode
     val newtag = tag.rewrite(binds)
-    ReplActor ! ("Eva", "addTo", ("tag", "", newtag._1)) //RWTree.addTo(tagNode, newtag._1)
-	
-    ReplActor ! ("Eva", "setSubroot", "content") // RWTree.current = contentNode
     val newcontent = content.rewrite(binds)
-    ReplActor ! ("Eva", "addTo", ("content", "", newcontent._1)) // RWTree.addTo(contentNode, newcontent._1)
-	
     if (newtag._2 || newcontent._2) {
-        ReplActor ! ("Eva", "setSubroot", "rwNode") //RWTree.current = rwNode
-        val newSF = SpecialForm(newtag._1, newcontent._1)
-        ReplActor ! ("Eva", "addTo", ("rwNode", "", newSF)) //RWTree.addTo(rwNode, newSF) 
-        
-        ReplActor ! ("Eva", "popTable", "SpecialForm rewrite")
-        (newSF, true)
+        (SpecialForm(newtag._1, newcontent._1), true)
     } else {
-        ReplActor ! ("Eva", "popTable", "SpecialForm rewrite")
         (this, false)
     }
   }
-	//////////////////// end GUI changes
 }
 
 /**

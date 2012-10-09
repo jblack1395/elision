@@ -38,7 +38,6 @@
 package ornl.elision.core
 
 import scala.collection.mutable.OpenHashMap
-import ornl.elision.repl.ReplActor
 
 /**
  * Represent a variable.
@@ -167,64 +166,25 @@ class Variable(typ: BasicAtom, val name: String,
       Fail("Variable is not bindable.", this, subject)
     }
   }
-	  
-	/*
-	def rewrite(binds: Bindings) = {
+
+  def rewrite(binds: Bindings) = {
     // If this variable is bound in the provided bindings, replace it with the
     // bound value.
     binds.get(name) match {
-      case Some(atom) =>
-        (atom, true)
+      case Some(atom) => (atom, true)
       case None =>
         // While the atom is not bound, its type might have to be rewritten.
         theType.rewrite(binds) match {
           case (newtype, changed) =>
-            if (changed) (Variable(newtype, name), true) else (this, false)
+            if (changed) { 
+              (Variable(newtype, name), true)
+            } else {
+              (this, false)
+            }
           case _ => (this, false)
         }
     }
   }
-  */
-	  //////////////////// GUI changes
-  def rewrite(binds: Bindings) = {
-	ReplActor ! ("Eva","pushTable","Variable rewrite")
-    // top node of this subtree
-	ReplActor ! ("Eva", "addToSubroot", ("rwNode", "Variable rewrite: ")) // val rwNode = RWTree.addToCurrent("Variable rewrite: ")
-	ReplActor ! ("Eva", "addTo", ("rwNode", "type", theType)) // val typeNode = RWTree.addTo(rwNode, theType)
-	
-    // If this variable is bound in the provided bindings, replace it with the
-    // bound value.
-    binds.get(name) match {
-      case Some(atom) =>
-        ReplActor ! ("Eva", "addTo", ("rwNode", "", atom)) // RWTree.addTo(rwNode, atom)
-        
-        ReplActor ! ("Eva", "popTable", "Variable rewrite")
-		(atom, true)
-      case None =>
-		ReplActor ! ("Eva", "setSubroot", "type") // RWTree.current = typeNode
-        // While the atom is not bound, its type might have to be rewritten.
-        theType.rewrite(binds) match {
-          case (newtype, changed) =>
-			ReplActor ! ("Eva", "addTo", ("type", "", newtype)) // RWTree.addTo(typeNode, newtype)
-            if (changed) { 
-				ReplActor ! ("Eva", "setSubroot", "rwNode") // RWTree.current = rwNode
-				val newVar = Variable(newtype, name)
-				ReplActor ! ("Eva", "addTo", ("rwNode", "", newVar)) // RWTree.addTo(rwNode, newVar) 
-                
-                ReplActor ! ("Eva", "popTable", "Variable rewrite")
-				(newVar, true) 
-			} else {
-                ReplActor ! ("Eva", "popTable", "Variable rewrite")
-                (this, false)
-            }
-          case _ => {
-            ReplActor ! ("Eva", "popTable", "Variable rewrite")
-            (this, false)
-          }
-        }
-    }
-  }
-  //////////////////// end GUI changes
   
   override lazy val hashCode = typ.hashCode * 31 + name.hashCode
   

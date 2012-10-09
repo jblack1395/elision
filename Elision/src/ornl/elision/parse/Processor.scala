@@ -30,7 +30,6 @@
 package ornl.elision.parse
 
 import ornl.elision.core._
-import ornl.elision.repl.ReplActor
 import ornl.elision.parse.AtomParser.{Presult, Failure, Success, AstNode}
 
 /**
@@ -170,11 +169,7 @@ with HasHistory {
    * 					An error occurred trying to read.
    */
   def read(source: scala.io.Source, filename: String = "(console)") {
-    ReplActor ! ("Eva", "pushTable", "Processor read")
-    ReplActor ! ("Eva", "addToSubroot", ("read", "Reading: " + filename))
-    ReplActor ! ("Eva", "setSubroot", "read")
     _execute(_parser.parseAtoms(source)) 
-    ReplActor ! ("Eva", "popTable", "Processor read")
   }
   
   /**
@@ -234,8 +229,6 @@ with HasHistory {
   private def _execute(result: Presult) {
     import ornl.elision.ElisionException
     startTimer
-	
-    ReplActor ! ("Eva","pushTable","Processor _execute")
     
     try {
     	result match {
@@ -244,34 +237,18 @@ with HasHistory {
   			  // We assume that there is at least one handler; otherwise not much
   			  // will happen.  Process each node.
   			  for (node <- nodes) {
-				//////////////////// GUI changes
-                ReplActor ! ("Eva", "setSubroot", "subroot")
-                var nodeLabel : String = "line node: " // TODO: This should be the parse string of the original term represented by this node.
-                ReplActor ! ("Eva", "addToSubroot", ("lineNode", nodeLabel)) //val lineNode = RWTree.addTo(rwNode, nodeLabel)
-				ReplActor ! ("Eva", "setSubroot", "lineNode") //RWTree.current = lineNode
-				
-				
   			    _handleNode(node) match {
   			      case None =>
   			      case Some(newnode) =>
   			        // Interpret the node.
-                    ReplActor ! ("Eva", "addTo", ("lineNode", "interpret", "Interpretation Tree: "))
-                    ReplActor ! ("Eva", "setSubroot", "interpret") // RWTree.current = lineNode // GUI changes
-  			        val atom = newnode.interpret
-                    
-                    ReplActor ! ("Eva", "addTo", ("lineNode", "handle", "Handler Tree: "))
-                    ReplActor ! ("Eva", "setSubroot", "handle")
-  			        _handleAtom(atom) match {
+  			        _handleAtom(newnode.interpret) match {
   			          case None =>
   			          case Some(newatom) =>
-                        ReplActor ! ("Eva", "addTo", ("lineNode", "result", "Result Tree: "))
-                        ReplActor ! ("Eva", "setSubroot", "result") //RWTree.current = lineNode
   			            // Hand off the node.
   			            _result(newatom)
   			        }
   			    }
   			  } // Process all the nodes.
-              //////////////////// end GUI changes
     	}
     } catch {
       case ElisionException(msg) =>
@@ -293,8 +270,6 @@ with HasHistory {
         coredump("Internal error.", Some(th))
     }
     
-    ReplActor ! ("Eva","popTable","Processor _execute")
-    
     stopTimer
     showElapsed
   }
@@ -314,25 +289,12 @@ with HasHistory {
   private def _handleAtom(atom: BasicAtom): Option[BasicAtom] = {
     // Pass the atom to the handlers.  If any returns None, we are done.
     var theAtom = atom
-	
-	//////////////////// GUI changes
-	ReplActor ! ("Eva", "pushTable", "_handleAtom")
-	// add this atom as a child to the root node
-	ReplActor ! ("Eva", "addToSubroot", ("atomNode", atom)) //val atomNode = RWTree.addTo(rwNode, atom)
-	
-	//////////////////// end GUI changes
-	
     for (handler <- _queue) {
-      ReplActor ! ("Eva", "setSubroot", "atomNode") //RWTree.current = atomNode // GUI change
       handler.handleAtom(theAtom) match {
-        case None => 
-            ReplActor ! ("Eva", "popTable", "_handleAtom") // GUI change
-            return None
+        case None =>  return None
         case Some(alt) => theAtom = alt
       }
     } // Perform all handlers.
-    
-    ReplActor ! ("Eva", "popTable", "_handleAtom") // GUI change
     return Some(theAtom)
   }
   

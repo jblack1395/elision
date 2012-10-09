@@ -39,7 +39,6 @@ package ornl.elision.core
 
 import scala.collection.IndexedSeq
 import ornl.elision.core.matcher._
-import ornl.elision.repl.ReplActor
 
 /**
  * Fast access to an untyped empty sequence.
@@ -201,37 +200,20 @@ extends BasicAtom with IndexedSeq[BasicAtom] {
     }
   }
 	
-  // GUI changes
   def rewrite(binds: Bindings): (AtomSeq, Boolean) = {
-    ReplActor ! ("Eva", "pushTable", "AtomSeq rewrite")
-    // top node of this subtree
-    ReplActor ! ("Eva", "addToSubroot", ("rwNode", "AtomSeq rewrite: ")) // val rwNode = RWTree.addToCurrent("AtomSeq rewrite")
-    
     // Rewrite the properties.
-    ReplActor ! ("Eva", "addTo", ("rwNode", "props", "Properties: ", props))  // val propsNode = RWTree.addTo(rwNode, "Properties: ",props)
-    ReplActor ! ("Eva", "setSubroot", "props")    //RWTree.current = propsNode
     val (newprop, pchanged) = props.rewrite(binds)
     
     // We must rewrite every child atom, and collect them into a new sequence.
-    ReplActor ! ("Eva", "addTo", ("rwNode", "atoms", "Atoms: ")) // RWTree.current = RWTree.addTo(rwNode, "Atoms: ")
-    ReplActor ! ("Eva", "setSubroot", "atoms")
     val (newseq, schanged) = SequenceMatcher.rewrite(atoms, binds)
     
     // If anything changed, make a new sequence.
     if (pchanged || schanged) {
-      ReplActor ! ("Eva", "setSubroot", "rwNode") //RWTree.current = rwNode
-      val newAS = new AtomSeq(newprop, newseq)
-      ReplActor ! ("Eva", "addTo", ("rwNode", "", newAS)) // rwNode.addChild(newAS)
-      
-      ReplActor ! ("Eva", "popTable", "AtomSeq rewrite")
-      (newAS, true)
-    }
-    else {
-      ReplActor ! ("Eva", "popTable", "AtomSeq rewrite")
+      (new AtomSeq(newprop, newseq), true)
+    } else {
       (this, false)
     }
   }
-  // end GUI changes
 
   /**
    * Provide a "naked" version of the sequence, without the parens and property

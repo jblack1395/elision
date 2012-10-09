@@ -40,7 +40,6 @@ package ornl.elision.core
 import scala.annotation.tailrec
 import scala.collection.mutable.{Map => MMap, BitSet, ListBuffer}
 import ornl.elision.ElisionException
-import ornl.elision.repl.ReplActor
 import scala.collection.immutable.HashSet
 
 /**
@@ -447,13 +446,6 @@ extends Fickle with Mutable {
    *          applied.
    */
   def rewrite(atom: BasicAtom) = {
-    ReplActor ! ("Eva","pushTable", "RuleLibrary rewrite")
-    // top node of this subtree
-    ReplActor ! ("Eva", "addToSubroot", ("rwNode", "RuleLibrary rewrite: ", atom)) // val rwNode = RWTree.addToCurrent("RuleLibrary rewrite: ", atom)
-    ReplActor ! ("Eva", "setSubroot", "rwNode") // RWTree.current = rwNode
-    val tempDisabled = ReplActor.disableGUIComs
-    if (ReplActor.disableRuleLibraryVis) ReplActor.disableGUIComs = true
-    
     // Check the cache.
     val (newatom, flag) = Memo.get(atom, _activeNames) match {
       case None =>
@@ -470,11 +462,6 @@ extends Fickle with Mutable {
         pair
       }
     }
-    
-    ReplActor.disableGUIComs = tempDisabled
-    if(flag) ReplActor ! ("Eva", "addTo", ("rwNode", "", newatom)) // RWTree.addTo(rwNode,newatom)
-    ReplActor ! ("Eva", "popTable", "RuleLibrary rewrite")
-    
     (newatom, flag)
   }
   // *************** end GUI changes
@@ -492,13 +479,6 @@ extends Fickle with Mutable {
    *          applied.
    */
   def rewrite(atom: BasicAtom, rulesets: Set[String]) = {
-    ReplActor ! ("Eva","pushTable", "RuleLibrary rewrite")
-    // top node of this subtree
-    ReplActor ! ("Eva", "addToSubroot", ("rwNode", "RuleLibrary rewrite: ", atom)) // val rwNode = RWTree.addToCurrent("RuleLibrary rewrite: ", atom)
-    ReplActor ! ("Eva", "setSubroot", "rwNode") // RWTree.current = rwNode 
-    val tempDisabled = ReplActor.disableGUIComs
-    if (ReplActor.disableRuleLibraryVis) ReplActor.disableGUIComs = true
-    
     // Check the cache.
     val usedRulesets = if (rulesets.isEmpty) _activeNames else rulesets
     val (newatom, flag) = Memo.get(atom, usedRulesets) match {
@@ -516,11 +496,6 @@ extends Fickle with Mutable {
         pair
       }
     }
-    
-    ReplActor.disableGUIComs = tempDisabled
-    ReplActor ! ("Eva", "addTo", ("rwNode", "", newatom)) // RWTree.addTo(rwNode,newatom)
-    ReplActor ! ("Eva", "popTable", "RuleLibrary rewrite")
-    
     (newatom, flag)
   }
   // *************** end GUI changes

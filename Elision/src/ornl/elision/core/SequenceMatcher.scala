@@ -37,8 +37,6 @@
  * */
 package ornl.elision.core
 
-import ornl.elision.repl.ReplActor
-
 /**
  * Match two sequences of atoms.
  * 
@@ -65,35 +63,23 @@ object SequenceMatcher {
    * @return	The result of the match.
    */
   def tryMatch(patterns: OmitSeq[BasicAtom], subjects: OmitSeq[BasicAtom],
-               binds: Bindings = Bindings()): Outcome = {
-                 if (BasicAtom.traceMatching) {
-                   if (BasicAtom.traceVerbose(this)) {
-                     println("Sequence Matcher called: ")
-                     println("    Patterns: " + patterns.mkParseString("",",",""))
-                     println("    Subjects: " + subjects.mkParseString("",",",""))
-                     println("    Bindings: " + binds.toParseString)
-                   } else if (BasicAtom.traceTerse(this)) {
-                     println("Sequence: " + patterns.mkParseString("(",",",")") + " ~> " +
-                             subjects.mkParseString("(",",",") ") + binds.toParseString)
-                   }
-                 }
-                 if (patterns.length != subjects.length)
-                   Fail("Sequences are not the same length.")
-                 else _tryMatch(patterns, subjects, binds, 0)
-               }
-  /*
-   def rewrite(subjects: OmitSeq[BasicAtom], binds: Bindings) = {
-   var changed = false
-   def doit(atoms: IndexedSeq[BasicAtom]): IndexedSeq[BasicAtom] =
-   if (atoms.isEmpty) IndexedSeq[BasicAtom]() else {
-   val (newatom, change) = atoms.head.rewrite(binds)
-   changed |= change
-   newatom +: doit(atoms.tail)
-   }
-   (doit(subjects), changed)
-   }
-   */
-  //  GUI changes
+      binds: Bindings = Bindings()): Outcome = {
+    if (BasicAtom.traceMatching) {
+      if (BasicAtom.traceVerbose(this)) {
+        println("Sequence Matcher called: ")
+        println("    Patterns: " + patterns.mkParseString("",",",""))
+        println("    Subjects: " + subjects.mkParseString("",",",""))
+        println("    Bindings: " + binds.toParseString)
+      } else if (BasicAtom.traceTerse(this)) {
+        println("Sequence: " + patterns.mkParseString("(",",",")") + " ~> " +
+                subjects.mkParseString("(",",",") ") + binds.toParseString)
+      }
+    }
+    if (patterns.length != subjects.length)
+      Fail("Sequences are not the same length.")
+    else _tryMatch(patterns, subjects, binds, 0)
+  }
+
   /**
    * Rewrite a sequence of atoms by applying the given bindings to each.
    * 
@@ -103,28 +89,17 @@ object SequenceMatcher {
    * 					that is true if any rewrites succeeded.
    */
   def rewrite(subjects: OmitSeq[BasicAtom], binds: Bindings) = {
-    ReplActor ! ("Eva","pushTable","obj SequenceMatcher rewrite")
-    // top node of this subtree
-    ReplActor ! ("Eva", "addToSubroot", ("rwNode", "object SequenceMatcher rewrite: ")) // val rwNode = RWTree.addToCurrent("object SequenceMatcher rewrite: ")
-    ReplActor ! ("Eva", "addTo", ("rwNode", "seq", "sequence: ")) // val seqNode = RWTree.addTo(rwNode, "sequence: ")
-    
     var changed = false
     var index = 0
     var newseq = OmitSeq[BasicAtom]()
     while (index < subjects.size) {
-      ReplActor ! ("Eva", "addTo", ("seq", "head", subjects(index))) // val headNode = seqNode.addChild(atoms.head)
-      ReplActor ! ("Eva", "setSubroot", "head") // RWTree.current = headNode
       val (newatom, change) = subjects(index).rewrite(binds)
-      ReplActor ! ("Eva", "addTo", ("head", "", newatom)) // RWTree.addTo(headNode, newatom)
       changed |= change
       newseq :+= newatom
       index += 1
     } // Rewrite the subjects.
-    
-    ReplActor ! ("Eva", "popTable", "obj SequenceMatcher rewrite")
     if (changed) (newseq, changed) else (subjects, false)
   }
-  //  end GUI changes
 
   /**
    * Match two sequences of atoms, in order.
@@ -167,13 +142,9 @@ object SequenceMatcher {
         // NOTE  It may be more efficient to replace this recursion.
         val (pt, st) = (patterns.tail, subjects.tail)
           Many(MatchIterator(
-            (newbinds: Bindings) => _tryMatch(pt, 
-                                              st, 
-                                              //(newbinds++binds).set(newbinds.patterns.getOrElse(patterns),
-                                              //                      newbinds.subjects.getOrElse(subjects)), 
-                                              (newbinds++binds),
-                                              position+1),
-            miter))
+            (newbinds: Bindings) =>
+              _tryMatch(pt, st, (newbinds++binds), position+1),
+              miter))
     }
   }
 }

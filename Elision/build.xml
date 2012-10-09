@@ -192,8 +192,6 @@ bin, lib, and other folders.</echo>
 		</copy>
 		<copy file="${build.base}/etc/elision_configuration.dtd"
 			todir="${build.bin}" overwrite="yes"/>
-        <copy file="${build.base}/etc/EvaIcon.png"
-			todir="${build.bin}" overwrite="yes"/>
 		<copy file="${build.base}/etc/config.xml"
 			tofile="${build.bin}/configuration.xml" overwrite="yes">
 			<filterset>
@@ -278,16 +276,6 @@ bin, lib, and other folders.</echo>
 			<manifest>
 				<attribute name="Build-Date" value="${DSTAMP}"/>
 				<attribute name="Main-Class" value="ornl.elision.Main"/>
-			</manifest>
-		</jar>
-        <jar
-			filesetmanifest	="skip"
-			destfile		="${build.latest}/elision-eva.jar">
-			<fileset dir="${build.bin}"/>
-			<zipgroupfileset dir="${build.lib}" includes="**/*.jar"/>
-			<manifest>
-				<attribute name="Build-Date" value="${DSTAMP}"/>
-				<attribute name="Main-Class" value="ornl.elision.gui.mainGUI"/>
 			</manifest>
 		</jar>
 		<jar destfile = "${build.base}/${DSTAMP}/elision-src.jar">
