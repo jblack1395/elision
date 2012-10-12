@@ -39,7 +39,10 @@ package ornl.elision.core
 import ornl.elision.ElisionException
 
 /**
- * Indicate a properties specification is illegal.
+ * Indicate a properties specification is illegal.  This typically indicates a
+ * bad value for a property (setting commutativity to a non Boolean value, for
+ * instance, such as "5") or using properties incorrectly (such as
+ * specifying idempotency but not associativity).
  * 
  * @param msg	Human readable message.
  */
