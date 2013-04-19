@@ -326,4 +326,205 @@ bin, lib, and other folders.</echo>
 			classpathref="build.classpath">
 		</java>
 	</target>
+	
+    <target
+        name="findbugs_warnings" >
+        <echo>Running findbugs on the jar (this may take a while)...</echo>
+    	<property name="findbugs.home" value="/home/fxuser/findbugs-2.0.2" />
+    	<path id="findbugs.lib.path">
+    	      <fileset dir="${findbugs.home}/lib" includes="*.jar"/>
+    	    </path>
+        <taskdef
+            name="findbugs"
+            classname="edu.umd.cs.findbugs.anttask.FindBugsTask" >
+            <classpath refid="findbugs.lib.path" />
+        </taskdef>
+        <!-- This will only report the most grevious bugs. -->
+        <findbugs
+            home="${findbugs.home}"
+            includeFilter="findbugs_filter.xml"
+            jvmargs="-Xms256m -Xmx1000m -Xss256m"
+            output="xml"
+        	timeout="3600000"
+            reportLevel="medium" 
+            outputFile="findbugs.xml">
+            <sourcePath path="${build.src}" />
+            <class location="${build.latest}/${build.jar}" />
+        </findbugs>
+        <echo>Done running findbugs on the jar.</echo>
+    </target>
+
+    <!--
+       This task will run several external Java code checking tools on the
+       system source code and the generated jar. The checkers that will be run
+       are checkstyle (http://checkstyle.sourceforge.net/) and findbugs
+       (http://findbugs.sourceforge.net/).
+    -->
+    <target
+        name="jenkins_gen_warnings"
+        depends="findbugs_warnings">
+        <echo>Done running external code checkers.</echo>
+    </target>
+
+	<target name="init-cobertura">
+		<delete file="cobertura.ser"/>
+        <property name="instrumented.cobertura.dir" value="${build.base}/cobertura/bin" />
+        <property name="report.cobertura.dir" value="${build.base}/cobertura/report" />
+		<mkdir dir="${report.cobertura.dir}" />
+		<mkdir dir="${instrumented.cobertura.dir}" />
+		<property name="cobertura.dir" value="/home/fxuser/cobertura-1.9.4.1" />
+	</target>
+
+    <target
+        name="test"
+        depends="jars, build_tests, init-cobertura"
+        description="Select Testing components." >
+    	<property name="dir.test.reports" value="${build.base}/junitreports" />
+        <property
+            name="build.tests"
+            value="yes" />
+
+        <echo>Selecting Testing components.</echo>
+		<path id="cobertura.classpath">
+			<fileset dir="/home/fxuser/cobertura-1.9.4.1">
+				<include name="cobertura.jar" />
+				<include name="lib/**/*.jar" />
+			</fileset>
+		</path>
+		<taskdef classpathref="cobertura.classpath" resource="tasks.properties" />
+		<cobertura-instrument todir="${instrumented.cobertura.dir}">
+			<fileset dir="${build.bin}">
+				<include name="**/*.class" />
+				<exclude name="**/*Test.class"/>
+				<exclude name="**/*Specification*.class"/>
+			</fileset>
+		</cobertura-instrument>
+
+        <mkdir dir="${reports.tests}" />
+        <mkdir dir="${dir.test.reports}" />
+
+        <mkdir dir="${reports.tests}" />
+        
+        <echo>Running tests on ${build.test.build}</echo>
+        <echo>Test results will be in ${reports.tests}</echo>
+        <property environment="env"/>
+        <junit
+            haltonfailure="no"
+            printsummary="yes" >
+            <classpath>
+                <fileset dir="${env.SCALA_HOME}/lib">
+                    <include name="*.jar"/>
+                </fileset>
+            	<fileset dir="lib">
+            		<include name="*.jar"/>
+                    <exclude name="ant*.jar" />
+            	</fileset>
+                <pathelement path="${build.bin}" />
+            </classpath>
+        	<sysproperty key="net.sourceforge.cobertura.datafile" file="cobertura.ser"/>
+        	<classpath location="${instrumented.cobertura.dir}"/>
+        	<classpath location="${cobertura.classpath}"/>
+        	<formatter type="xml" />
+            <batchtest
+                fork="true"
+                todir="${reports.tests}" >
+	      
+	      <fileset dir="${build.bin}" >
+		<include name="**/*Test*.class" />
+			<include name="**/*Specification*.class" />
+		<exclude name="**/AllTests.class" />
+	      </fileset>
+            </batchtest>
+        </junit>
+		<junitreport todir="${dir.test.reports}">
+			<fileset dir="${reports.tests}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report todir="${dir.test.reports}" />
+		</junitreport>
+    	<mkdir dir="coveragereport"/>
+    	<cobertura-report format="xml" destdir="coveragereport">
+    		<fileset dir="${build.bin}">
+    			<include name="**/*.java" />
+    		</fileset>
+    	</cobertura-report>
+	</target>
+
+	<target name="jenkins_all" depends="test, jenkins_gen_warnings, docs">
+	</target>
+	
+    <target
+        name="jenkins_test"
+        depends="jars, build_tests, init-cobertura"
+        description="Select Testing components." >
+    	<property name="dir.test.reports" value="${env.WORKSPACE}\junitreports" />
+        <property
+            name="build.tests"
+            value="yes" />
+
+        <echo>Selecting Testing components.</echo>
+		<path id="cobertura.classpath">
+			<fileset dir="/home/fxuser/cobertura-1.9.4.1">
+				<include name="cobertura.jar" />
+				<include name="lib/**/*.jar" />
+			</fileset>
+		</path>
+		<taskdef classpathref="cobertura.classpath" resource="tasks.properties" />
+		<cobertura-instrument todir="${instrumented.cobertura.dir}">
+			<fileset dir="${build.bin}">
+				<include name="**/*.class" />
+				<exclude name="**/*Test.class"/>
+				<exclude name="**/*Specification*.class"/>
+			</fileset>
+		</cobertura-instrument>
+
+        <mkdir dir="${reports.tests}" />
+        <mkdir dir="${dir.test.reports}" />
+
+        <mkdir dir="${reports.tests}" />
+        
+        <echo>Running tests on ${build.test.build}</echo>
+        <echo>Test results will be in ${reports.tests}</echo>
+        <property environment="env"/>
+        <junit
+            haltonfailure="no"
+            printsummary="yes" >
+            <classpath>
+                <fileset dir="${env.SCALA_HOME}/lib">
+                    <include name="*.jar"/>
+                </fileset>
+            	<fileset dir="lib">
+            		<include name="*.jar"/>
+                    <exclude name="ant*.jar" />
+            	</fileset>
+                <pathelement path="${build.bin}" />
+            </classpath>
+        	<sysproperty key="net.sourceforge.cobertura.datafile" file="cobertura.ser"/>
+        	<classpath location="${instrumented.cobertura.dir}"/>
+        	<classpath location="${cobertura.classpath}"/>
+        	<formatter type="xml" />
+            <batchtest
+                fork="true"
+                todir="${reports.tests}" >
+	      
+	      <fileset dir="${build.bin}" >
+		<include name="**/*Test*.class" />
+			<include name="**/*Specification*.class" />
+		<exclude name="**/AllTests.class" />
+	      </fileset>
+            </batchtest>
+        </junit>
+		<junitreport todir="${dir.test.reports}">
+			<fileset dir="${reports.tests}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report todir="${dir.test.reports}" />
+		</junitreport>
+    	<mkdir dir="coveragereport"/>
+    	<cobertura-report format="xml" destdir="coveragereport">
+    		<fileset dir="${build.bin}">
+    			<include name="**/*.java" />
+    		</fileset>
+    	</cobertura-report>
+	</target>
 </project>
