@@ -450,7 +450,7 @@ bin, lib, and other folders.</echo>
     	</cobertura-report>
 	</target>
 
-	<target name="jenkins_all" depends="test, jenkins_gen_warnings, docs">
+	<target name="jenkins_all" depends="jenkins_test, jenkins_gen_warnings, docs">
 	</target>
 	
     <target
